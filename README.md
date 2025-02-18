@@ -1,0 +1,2 @@
+# mosbot
+Moscato Dollar Bot
