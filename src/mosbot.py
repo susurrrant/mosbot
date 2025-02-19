@@ -1,10 +1,11 @@
 from typing import Optional
+import os
 
 import discord
 from discord import app_commands
 import sqlite3
 
-guild_id = 'guild_id'
+guild_id = os.environ.get('MOSBOT_GUILD_ID')
 MY_GUILD = discord.Object(id=guild_id)  # replace with your guild id
 
 
@@ -135,12 +136,12 @@ async def mostake(interaction: discord.Interaction, member: discord.Member, doll
             await interaction.response.send_message(f'{member_name} has lost {dollars} $mos, and now has {update_dollars} $mos. Memo: {memo}')
 
         else:
-            init_dollars = 0 - dollars;
+            init_dollars = 0 - dollars
             cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, init_dollars,))
             con.commit()
             con.close() 
 
-            await interaction.response.send_message(f'{member_name} has lost {dollars} $mos, and now has {dollars} $mos. Memo: {memo}')
+            await interaction.response.send_message(f'{member_name} has lost {dollars} $mos, and now has {init_dollars} $mos. Memo: {memo}')
 
     else:
         await interaction.response.send_message(f'{caller_name} does not have $mos ledger write permissions.')        
@@ -205,8 +206,47 @@ async def mosrank(interaction: discord.Interaction):
 
     
     #lol, lmao even
-    rank_str = f"Top 10 $mos balance \n 1. {user_name[0]} - {user_rank[0]} $mos \n 2. {user_name[1]} - {user_rank[1]} $mos \n 3. {user_name[2]} - {user_rank[2]} $mos \n 4. {user_name[3]} - {user_rank[3]} $mos \n 5.  {user_name[4]} - {user_rank[4]} $mos \n 6. {user_name[5]} - {user_rank[5]} $mos \n 7. {user_name[6]} - {user_rank[6]} $mos \n 8. {user_name[7]} - {user_rank[7]} $mos \n 9. {user_name[8]} - {user_rank[8]} $mos \n 10. {user_name[9]} - {user_rank[9]} $mos"
+    rank_str = f"Top 10 $mos balance \n 1. {user_name[0]}: {user_rank[0]} $mos \n 2. {user_name[1]}: {user_rank[1]} $mos \n 3. {user_name[2]}: {user_rank[2]} $mos \n 4. {user_name[3]}: {user_rank[3]} $mos \n 5.  {user_name[4]}: {user_rank[4]} $mos \n 6. {user_name[5]}: {user_rank[5]} $mos \n 7. {user_name[6]}: {user_rank[6]} $mos \n 8. {user_name[7]}: {user_rank[7]} $mos \n 9. {user_name[8]}: {user_rank[8]} $mos \n 10. {user_name[9]}: {user_rank[9]} $mos"
+
+    await interaction.response.send_message(rank_str)      
+
+@client.tree.command()
+@app_commands.describe(
+)
+async def mosrankinv(interaction: discord.Interaction):
+    """Displays current bottom 10 $mos rankings"""
+    con = sqlite3.connect("mosbot.db")
+    cur = con.cursor()
+
+    res = cur.execute("SELECT * FROM bank ORDER BY balance ASC")
+    data = res.fetchall()
+    con.close() 
+
+    data_length = len(data)
+
+    user_name = [0] * 10
+    user_rank = [0] * 10
+
+    guild = await client.fetch_guild(guild_id)
+
+    #only care about the top 10
+    if data_length >= 10:
+        for i in range(0,10):
+            #this is because I didn't start storing display_name along with id in the db. eh, will revamp later
+            member = await guild.fetch_member(data[i][0])
+            user_name[i] = member.display_name
+            user_rank[i] = data[i][1]
+    else:
+        for i in range(0, (data_length - 1)):
+            member = await guild.fetch_member(data[i][0])
+            user_name[i] = member.display_name
+            user_rank[i] = data[i][1]
+
+
+    
+    #lol, lmao even
+    rank_str = f"Bottom 10 $mos balance \n 1. {user_name[0]}: {user_rank[0]} $mos \n 2. {user_name[1]}: {user_rank[1]} $mos \n 3. {user_name[2]}: {user_rank[2]} $mos \n 4. {user_name[3]}: {user_rank[3]} $mos \n 5.  {user_name[4]}: {user_rank[4]} $mos \n 6. {user_name[5]}: {user_rank[5]} $mos \n 7. {user_name[6]}: {user_rank[6]} $mos \n 8. {user_name[7]}: {user_rank[7]} $mos \n 9. {user_name[8]}: {user_rank[8]} $mos \n 10. {user_name[9]}: {user_rank[9]} $mos"
 
     await interaction.response.send_message(rank_str)         
 
-client.run('token')
+client.run(os.environ.get('MOSBOT_TOKEN'))
