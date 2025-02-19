@@ -82,19 +82,72 @@ async def mosgive(interaction: discord.Interaction, member: discord.Member, doll
 
             cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_dollars, member_id,))
             con.commit()
-            con.close()      
+            con.close()
 
             await interaction.response.send_message(f'{member_name} has gained {dollars} $mos, and now has {update_dollars} $mos. Memo: {memo}')
 
         else:
             cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, dollars,))
             con.commit()
-            con.close() 
+            con.close()
 
             await interaction.response.send_message(f'{member_name} now has {dollars} $mos. Memo: {memo}')
 
     else:
         await interaction.response.send_message(f'{caller_name} does not have $mos ledger write permissions.')
+
+
+
+@client.tree.command()
+@app_commands.describe(
+    dollars='The numbers of $mos to steal',
+)
+async def mossteal(interaction: discord.Interaction, dollars: int, memo: str):
+    valid_role = False
+    caller = interaction.user
+    caller_name = str(caller.display_name)
+
+
+    # There is currently one valid criminal interaction
+    #   until a table of relationships or something is made, this is hardcoded
+    sovoke_id = 134554502140395520;
+    thonir_id = 348883795266764800;
+
+    dollars = abs(dollars)
+
+    for role in caller.roles:
+        if role.name == "mos":
+            valid_role = True
+
+    if valid_role == True:
+
+        con = sqlite3.connect("mosbot.db")
+        cur = con.cursor()
+        source_res = cur.execute("SELECT * FROM bank WHERE id=?", (thonir_id,))
+        target_res = cur.execute("SELECT * FROM bank WHERE id=?", (sovoke_id,))
+
+        # If either are missing, this is unrecoverable
+        if source_res = None or target_res = None:
+            await interaction.response.send_message(f'Missing target or source.')
+        else:
+
+            # Assume that both currently exist (they do for now)
+            source_data = source_res.fetchone()
+            target_data = target_res.fetchone()
+
+            update_source = source_data - dollars;
+            update_target = target_data + dollars;
+
+            cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_source, thonir_id,))
+            cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_target, sovoke_id,))
+            con.commit()
+            con.close()
+
+            await interaction.response.send_message(f'Sovoke has stolen {dollars} $mos from Thonir, and now has {update_target} $mos. \n Thonir now has {update_source} $mos. Memo: {memo}')
+    else:
+        await interaction.response.send_message(f'{caller_name} does not have $mos ledger write permissions.')
+
+
 
 @client.tree.command()
 @app_commands.describe(
