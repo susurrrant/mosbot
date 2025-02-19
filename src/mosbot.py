@@ -135,11 +135,12 @@ async def mostake(interaction: discord.Interaction, member: discord.Member, doll
             await interaction.response.send_message(f'{member_name} has lost {dollars} $mos, and now has {update_dollars} $mos. Memo: {memo}')
 
         else:
-            cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, dollars,))
+            init_dollars = 0 - dollars;
+            cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, init_dollars,))
             con.commit()
             con.close() 
 
-            await interaction.response.send_message(f'{member_name} has gained {dollars} $mos, and now has {dollars} $mos. Memo: {memo}')
+            await interaction.response.send_message(f'{member_name} has lost {dollars} $mos, and now has {dollars} $mos. Memo: {memo}')
 
     else:
         await interaction.response.send_message(f'{caller_name} does not have $mos ledger write permissions.')        
