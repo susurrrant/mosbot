@@ -135,8 +135,8 @@ async def mossteal(interaction: discord.Interaction, dollars: int, memo: str):
             source_data = source_res.fetchone()
             target_data = target_res.fetchone()
 
-            update_source = source_data - dollars;
-            update_target = target_data + dollars;
+            update_source = source_data[1] - dollars;
+            update_target = target_data[1] + dollars;
 
             cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_source, thonir_id,))
             cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_target, sovoke_id,))
