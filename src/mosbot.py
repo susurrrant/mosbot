@@ -111,8 +111,8 @@ async def mossteal(interaction: discord.Interaction, dollars: int, memo: str):
 
     # There is currently one valid criminal interaction
     #   until a table of relationships or something is made, this is hardcoded
-    sovoke_id = 134554502140395520;
-    thonir_id = 348883795266764800;
+    sovoke_id = 134554502140395520
+    thonir_id = 348883795266764800
 
     dollars = abs(dollars)
 
@@ -138,7 +138,7 @@ async def mossteal(interaction: discord.Interaction, dollars: int, memo: str):
             update_target = target_data[1] + dollars
 
             # This should not run if either of the above cursors failed
-        if update_source is not 0 and update_target is not 0:
+        if (update_source != 0) and (update_target != 0):
             cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_source, thonir_id,))
             cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_target, sovoke_id,))
             con.commit()
