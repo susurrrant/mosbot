@@ -61,7 +61,7 @@ async def mosgive(interaction: discord.Interaction, member: discord.Member, doll
 
     member_name = str(member.display_name)
     member_id = member.id
-    
+
     if dollars < 0:
         dollars = dollars * -1
 
@@ -70,7 +70,7 @@ async def mosgive(interaction: discord.Interaction, member: discord.Member, doll
             valid_role = True
 
     if valid_role == True:
-        
+
         con = sqlite3.connect("mosbot.db")
         cur = con.cursor()
         res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
@@ -124,21 +124,21 @@ async def mossteal(interaction: discord.Interaction, dollars: int, memo: str):
 
         con = sqlite3.connect("mosbot.db")
         cur = con.cursor()
+        update_source = 0
+        update_target = 0
+
         source_res = cur.execute("SELECT * FROM bank WHERE id=?", (thonir_id,))
-        target_res = cur.execute("SELECT * FROM bank WHERE id=?", (sovoke_id,))
-
-        # If either are missing, this is unrecoverable
-        if source_res = None or target_res = None:
-            await interaction.response.send_message(f'Missing target or source.')
-        else:
-
-            # Assume that both currently exist (they do for now)
+        if (source_res is not None):
             source_data = source_res.fetchone()
+            update_source = source_data[1] - dollars
+
+        target_res = cur.execute("SELECT * FROM bank WHERE id=?", (sovoke_id,))
+        if (target_res is not None):
             target_data = target_res.fetchone()
+            update_target = target_data[1] + dollars
 
-            update_source = source_data[1] - dollars;
-            update_target = target_data[1] + dollars;
-
+            # This should not run if either of the above cursors failed
+        if update_source is not 0 and update_target is not 0:
             cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_source, thonir_id,))
             cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_target, sovoke_id,))
             con.commit()
@@ -171,7 +171,7 @@ async def mostake(interaction: discord.Interaction, member: discord.Member, doll
             valid_role = True
 
     if valid_role == True:
-        
+
         con = sqlite3.connect("mosbot.db")
         cur = con.cursor()
         res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
@@ -184,7 +184,7 @@ async def mostake(interaction: discord.Interaction, member: discord.Member, doll
 
             cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_dollars, member_id,))
             con.commit()
-            con.close()      
+            con.close()
 
             await interaction.response.send_message(f'{member_name} has lost {dollars} $mos, and now has {update_dollars} $mos. Memo: {memo}')
 
@@ -192,12 +192,12 @@ async def mostake(interaction: discord.Interaction, member: discord.Member, doll
             init_dollars = 0 - dollars
             cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, init_dollars,))
             con.commit()
-            con.close() 
+            con.close()
 
             await interaction.response.send_message(f'{member_name} has lost {dollars} $mos, and now has {init_dollars} $mos. Memo: {memo}')
 
     else:
-        await interaction.response.send_message(f'{caller_name} does not have $mos ledger write permissions.')        
+        await interaction.response.send_message(f'{caller_name} does not have $mos ledger write permissions.')
 
 @client.tree.command()
 @app_commands.describe(
@@ -215,14 +215,14 @@ async def moscheck(interaction: discord.Interaction, member: discord.Member):
     if res.fetchone() is not None:
         res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
         data = res.fetchone()
-        con.close() 
+        con.close()
 
-        await interaction.response.send_message(f'{member_name} has {data[1]} $mos') 
+        await interaction.response.send_message(f'{member_name} has {data[1]} $mos')
 
     else:
-        con.close() 
+        con.close()
 
-        await interaction.response.send_message(f'{member_name} has 0 $mos') 
+        await interaction.response.send_message(f'{member_name} has 0 $mos')
 
 @client.tree.command()
 @app_commands.describe(
@@ -234,7 +234,7 @@ async def mosrank(interaction: discord.Interaction):
 
     res = cur.execute("SELECT * FROM bank ORDER BY balance DESC")
     data = res.fetchall()
-    con.close() 
+    con.close()
 
     data_length = len(data)
 
@@ -257,11 +257,11 @@ async def mosrank(interaction: discord.Interaction):
             user_rank[i] = data[i][1]
 
 
-    
+
     #lol, lmao even
     rank_str = f"Top 10 $mos balance \n 1. {user_name[0]}: {user_rank[0]} $mos \n 2. {user_name[1]}: {user_rank[1]} $mos \n 3. {user_name[2]}: {user_rank[2]} $mos \n 4. {user_name[3]}: {user_rank[3]} $mos \n 5.  {user_name[4]}: {user_rank[4]} $mos \n 6. {user_name[5]}: {user_rank[5]} $mos \n 7. {user_name[6]}: {user_rank[6]} $mos \n 8. {user_name[7]}: {user_rank[7]} $mos \n 9. {user_name[8]}: {user_rank[8]} $mos \n 10. {user_name[9]}: {user_rank[9]} $mos"
 
-    await interaction.response.send_message(rank_str)      
+    await interaction.response.send_message(rank_str)
 
 @client.tree.command()
 @app_commands.describe(
@@ -273,7 +273,7 @@ async def mosrankinv(interaction: discord.Interaction):
 
     res = cur.execute("SELECT * FROM bank ORDER BY balance ASC")
     data = res.fetchall()
-    con.close() 
+    con.close()
 
     data_length = len(data)
 
@@ -296,10 +296,10 @@ async def mosrankinv(interaction: discord.Interaction):
             user_rank[i] = data[i][1]
 
 
-    
+
     #lol, lmao even
     rank_str = f"Bottom 10 $mos balance \n 1. {user_name[0]}: {user_rank[0]} $mos \n 2. {user_name[1]}: {user_rank[1]} $mos \n 3. {user_name[2]}: {user_rank[2]} $mos \n 4. {user_name[3]}: {user_rank[3]} $mos \n 5.  {user_name[4]}: {user_rank[4]} $mos \n 6. {user_name[5]}: {user_rank[5]} $mos \n 7. {user_name[6]}: {user_rank[6]} $mos \n 8. {user_name[7]}: {user_rank[7]} $mos \n 9. {user_name[8]}: {user_rank[8]} $mos \n 10. {user_name[9]}: {user_rank[9]} $mos"
 
-    await interaction.response.send_message(rank_str)         
+    await interaction.response.send_message(rank_str)
 
 client.run(os.environ.get('MOSBOT_TOKEN'))
