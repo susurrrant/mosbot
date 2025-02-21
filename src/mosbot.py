@@ -31,6 +31,7 @@ class MyClient(discord.Client):
 
 
 intents = discord.Intents.default()
+intents.members = True
 client = MyClient(intents=intents)
 
 con = sqlite3.connect("mosbot.db")
@@ -301,5 +302,58 @@ async def mosrankinv(interaction: discord.Interaction):
     rank_str = f"Bottom 10 $mos balance \n 1. {user_name[0]}: {user_rank[0]} $mos \n 2. {user_name[1]}: {user_rank[1]} $mos \n 3. {user_name[2]}: {user_rank[2]} $mos \n 4. {user_name[3]}: {user_rank[3]} $mos \n 5.  {user_name[4]}: {user_rank[4]} $mos \n 6. {user_name[5]}: {user_rank[5]} $mos \n 7. {user_name[6]}: {user_rank[6]} $mos \n 8. {user_name[7]}: {user_rank[7]} $mos \n 9. {user_name[8]}: {user_rank[8]} $mos \n 10. {user_name[9]}: {user_rank[9]} $mos"
 
     await interaction.response.send_message(rank_str)
+
+
+@client.tree.command()
+@app_commands.describe(
+)
+async def mosrankquick(interaction: discord.Interaction):
+    """Displays current top 10 $mos rankings"""
+    con = sqlite3.connect("mosbot.db")
+    cur = con.cursor()
+
+    res = cur.execute("SELECT * FROM bank ORDER BY balance DESC limit 10")
+    data = res.fetchall()
+    con.close()
+
+    data_length = len(data)
+
+    user_name = [0] * 10
+    user_rank = [0] * 10
+
+    # IDK if this part is required since we're using get_member not fetch_member
+    guild = await client.fetch_guild(guild_id)
+
+    #Early attempt in case get_member isn't working
+    test_name = guild.get_member(data[0][0])
+    if (test_name is None):
+        rank_str = "Get_member ain't working."
+
+    else:
+        #only care about the top 10
+        if data_length >= 10:
+            for i in range(0,10):
+                #this is because I didn't start storing display_name along with id in the db. eh, will revamp later
+                member = guild.get_member(data[i][0])
+                user_name[i] = member.display_name
+                user_rank[i] = data[i][1]
+        else:
+            for i in range(0, (data_length - 1)):
+                member = guild.get_member(data[i][0])
+                user_name[i] = member.display_name
+                user_rank[i] = data[i][1]
+
+
+
+        #this was tested with a print so should work for building this formatted string
+        user_tup = zip(range(1,11),user_name,user_rank)
+
+        rank_str = f"Top 10 $mos balance\n"
+        for num,name,amnt in user_tup:
+            rank_str += f"{num}. {name}: {amnt} $mos \n"
+
+        await interaction.response.send_message(rank_str)
+
+
 
 client.run(os.environ.get('MOSBOT_TOKEN'))
