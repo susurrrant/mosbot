@@ -31,6 +31,7 @@ class MyClient(discord.Client):
 
 
 intents = discord.Intents.default()
+intents.members = True
 client = MyClient(intents=intents)
 
 con = sqlite3.connect("mosbot.db")
@@ -301,5 +302,41 @@ async def mosrankinv(interaction: discord.Interaction):
     rank_str = f"Bottom 10 $mos balance \n 1. {user_name[0]}: {user_rank[0]} $mos \n 2. {user_name[1]}: {user_rank[1]} $mos \n 3. {user_name[2]}: {user_rank[2]} $mos \n 4. {user_name[3]}: {user_rank[3]} $mos \n 5.  {user_name[4]}: {user_rank[4]} $mos \n 6. {user_name[5]}: {user_rank[5]} $mos \n 7. {user_name[6]}: {user_rank[6]} $mos \n 8. {user_name[7]}: {user_rank[7]} $mos \n 9. {user_name[8]}: {user_rank[8]} $mos \n 10. {user_name[9]}: {user_rank[9]} $mos"
 
     await interaction.response.send_message(rank_str)
+
+
+@client.tree.command()
+@app_commands.describe(
+)
+async def mosrankquick(interaction: discord.Interaction):
+    """Displays current top 10 $mos rankings"""
+    con = sqlite3.connect("mosbot.db")
+    cur = con.cursor()
+
+    #Get only top 10 values
+    res = cur.execute("SELECT * FROM bank ORDER BY balance DESC limit 10")
+    data = res.fetchall()
+    con.close()
+
+    user_rank = []
+    user_id = []
+
+    # Build both lists out of our result
+    for data_result in data:
+        user_id.append(data_result[0])
+        user_rank.append(data_result[1])
+
+    guild = await client.fetch_guild(guild_id)
+
+    # Get a list of all members corresponding to ids from the result
+    members_by_id = await guild.query_members(limit=10,user_ids=user_id)
+    member_dict = dict(map(lambda key: (key.id,key.display_name),members_by_id))
+
+
+    rank_str = f"Top 10 $mos balance\n"
+    for num,id,amnt in zip(range(1,11),user_id,user_rank):
+        rank_str += f"{num}. {member_dict[id]}: {amnt} $mos \n"
+
+    await interaction.response.send_message(rank_str)
+
 
 client.run(os.environ.get('MOSBOT_TOKEN'))
