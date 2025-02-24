@@ -312,48 +312,31 @@ async def mosrankquick(interaction: discord.Interaction):
     con = sqlite3.connect("mosbot.db")
     cur = con.cursor()
 
+    #Get only top 10 values
     res = cur.execute("SELECT * FROM bank ORDER BY balance DESC limit 10")
     data = res.fetchall()
     con.close()
 
-    data_length = len(data)
+    user_rank = []
+    user_id = []
 
-    user_name = [0] * 10
-    user_rank = [0] * 10
+    # Build both lists out of our result
+    for data_result in data:
+        user_id.append(data_result[0])
+        user_rank.append(data_result[1])
 
-    # IDK if this part is required since we're using get_member not fetch_member
     guild = await client.fetch_guild(guild_id)
 
-    #Early attempt in case get_member isn't working
-    test_name = guild.get_member(data[0][0])
-    if (test_name is None):
-        rank_str = "Get_member ain't working."
-
-    else:
-        #only care about the top 10
-        if data_length >= 10:
-            for i in range(0,10):
-                #this is because I didn't start storing display_name along with id in the db. eh, will revamp later
-                member = guild.get_member(data[i][0])
-                user_name[i] = member.display_name
-                user_rank[i] = data[i][1]
-        else:
-            for i in range(0, (data_length - 1)):
-                member = guild.get_member(data[i][0])
-                user_name[i] = member.display_name
-                user_rank[i] = data[i][1]
+    # Get a list of all members corresponding to ids from the result
+    members_by_id = await guild.query_members(limit=10,user_ids=user_id)
+    member_dict = dict(map(lambda key: (key.id,key.display_name),members_by_id))
 
 
+    rank_str = f"Top 10 $mos balance\n"
+    for num,id,amnt in zip(range(1,11),user_id,user_rank):
+        rank_str += f"{num}. {member_dict[id]}: {amnt} $mos \n"
 
-        #this was tested with a print so should work for building this formatted string
-        user_tup = zip(range(1,11),user_name,user_rank)
-
-        rank_str = f"Top 10 $mos balance\n"
-        for num,name,amnt in user_tup:
-            rank_str += f"{num}. {name}: {amnt} $mos \n"
-
-        await interaction.response.send_message(rank_str)
-
+    await interaction.response.send_message(rank_str)
 
 
 client.run(os.environ.get('MOSBOT_TOKEN'))
