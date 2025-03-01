@@ -8,8 +8,7 @@ import sqlite3
 guild_id = os.environ.get('MOSBOT_GUILD_ID')
 MY_GUILD = discord.Object(id=guild_id)  # replace with your guild id
 ignored_ids = [473513656265736233, #Moscato
-               1343634021799694417, #Brann
-               206999941103616000
+               1343634021799694417 #Brann
               ]
 ignored_list_str = repr(ignored_ids).replace('[','(').replace(']',')')
 
