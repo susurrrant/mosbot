@@ -7,7 +7,10 @@ import sqlite3
 
 guild_id = os.environ.get('MOSBOT_GUILD_ID')
 MY_GUILD = discord.Object(id=guild_id)  # replace with your guild id
-
+ignored_ids = [473513656265736233, #Moscato
+               1343634021799694417 #Brann
+              ]
+ignored_list_str = repr(ignored_ids).replace('[','(').replace(']',')')
 
 class MyClient(discord.Client):
     def __init__(self, *, intents: discord.Intents):
@@ -313,7 +316,7 @@ async def mosrankquick(interaction: discord.Interaction):
     cur = con.cursor()
 
     #Get only top 10 values
-    res = cur.execute("SELECT * FROM bank ORDER BY balance DESC limit 10")
+    res = cur.execute("SELECT * FROM bank WHERE id NOT IN %s ORDER BY balance DESC limit 10" % ignored_list_str)
     data = res.fetchall()
     con.close()
 
@@ -337,6 +340,44 @@ async def mosrankquick(interaction: discord.Interaction):
         rank_str += f"{num}. {member_dict[id]}: {amnt} $mos \n"
 
     await interaction.response.send_message(rank_str)
+
+@client.tree.command()
+@app_commands.describe(
+)
+async def mosdebt(interaction: discord.Interaction):
+    """Displays current bottom 10 $mos rankings"""
+    con = sqlite3.connect("mosbot.db")
+    cur = con.cursor()
+
+
+    # does this work to make a list for sqlite
+
+    #Get bottom 10 values and filter out ignored ids
+    res = cur.execute("SELECT * FROM bank WHERE id NOT IN %s ORDER BY balance ASC limit 10" % ignored_list_str)
+    data = res.fetchall()
+    con.close()
+
+    user_rank = []
+    user_id = []
+
+    # Build both lists out of our result
+    for data_result in data:
+        user_id.append(data_result[0])
+        user_rank.append(data_result[1])
+
+    guild = await client.fetch_guild(guild_id)
+
+    # Get a list of all members corresponding to ids from the result
+    members_by_id = await guild.query_members(limit=10,user_ids=user_id)
+    member_dict = dict(map(lambda key: (key.id,key.display_name),members_by_id))
+
+
+    rank_str = f"Bottom 10 $mos balance\n"
+    for num,id,amnt in zip(range(1,11),user_id,user_rank):
+        rank_str += f"{num}. {member_dict[id]}: {amnt} $mos \n"
+
+    await interaction.response.send_message(rank_str)
+
 
 
 client.run(os.environ.get('MOSBOT_TOKEN'))
