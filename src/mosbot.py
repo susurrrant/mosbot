@@ -8,8 +8,9 @@ import sqlite3
 guild_id = os.environ.get('MOSBOT_GUILD_ID')
 MY_GUILD = discord.Object(id=guild_id)  # replace with your guild id
 ignored_ids = [473513656265736233, #Moscato
-               1343634021799694417 #Brann
+               brann_idiotbeard #Brann
               ]
+brann_idiotbeard = 1343634021799694417
 ignored_list_str = repr(ignored_ids).replace('[','(').replace(']',')')
 
 class MyClient(discord.Client):
@@ -108,7 +109,7 @@ async def mosgive(interaction: discord.Interaction, member: discord.Member, doll
     dollars='The numbers of $mos to steal',
 )
 async def mossteal(interaction: discord.Interaction, dollars: int, memo: str):
-    valid_role = False
+    valid_id = False
     caller = interaction.user
     caller_name = str(caller.display_name)
 
@@ -120,11 +121,10 @@ async def mossteal(interaction: discord.Interaction, dollars: int, memo: str):
 
     dollars = abs(dollars)
 
-    for role in caller.roles:
-        if role.name == "mos":
-            valid_role = True
+    if caller.id == sovoke_id:
+        valid_id = True
 
-    if valid_role == True:
+    if valid_id == True:
 
         con = sqlite3.connect("mosbot.db")
         cur = con.cursor()
@@ -173,6 +173,9 @@ async def mostake(interaction: discord.Interaction, member: discord.Member, doll
     for role in caller.roles:
         if role.name == "mos":
             valid_role = True
+
+    if member_id == brann_idiotbeard:
+        valid_role = True
 
     if valid_role == True:
 
