@@ -102,26 +102,26 @@ async def mosgive(interaction: discord.Interaction, members: str, dollars: int, 
         if dollars < 0:
             dollars = dollars * -1
 
-            con = sqlite3.connect("mosbot.db")
-            cur = con.cursor()
+        con = sqlite3.connect("mosbot.db")
+        cur = con.cursor()
+        res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
+
+        if res.fetchone() is not None:
             res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
+            data = res.fetchone()
 
-            if res.fetchone() is not None:
-                res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
-                data = res.fetchone()
+            update_dollars = data[1] + dollars
 
-                update_dollars = data[1] + dollars
-
-                cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_dollars, member_id,))
-                con.commit()
-                con.close()
+            cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_dollars, member_id,))
+            con.commit()
+            con.close()
 
             responseMessages.append(f'{member_name} now has {update_dollars} $mos.')
 
-            else:
-                cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, dollars,))
-                con.commit()
-                con.close()
+        else:
+            cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, dollars,))
+            con.commit()
+            con.close()
 
             responseMessages.append(f'{member_name} now has {dollars} $mos.')
 
