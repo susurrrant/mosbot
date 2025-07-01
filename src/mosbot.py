@@ -95,6 +95,7 @@ async def mosgive(interaction: discord.Interaction, members: str, dollars: int, 
     responseMessages = [f'Gave **{dollars}** dollars for *{memo}*']
     for member in unique_members:
         member_id = member.id
+        member_name = member.nick or member.global_name or member.name
 
         if dollars < 0:
             dollars = dollars * -1
@@ -113,14 +114,14 @@ async def mosgive(interaction: discord.Interaction, members: str, dollars: int, 
                 con.commit()
                 con.close()
 
-                responseMessages.append(f'{member.mention} now has {update_dollars} $mos.')
+            responseMessages.append(f'{member_name} now has {update_dollars} $mos.')
 
             else:
                 cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, dollars,))
                 con.commit()
                 con.close()
 
-                responseMessages.append(f'{member.mention} now has {dollars} $mos.')
+            responseMessages.append(f'{member_name} now has {dollars} $mos.')
 
     await interaction.response.send_message("\n".join(responseMessages))
 
