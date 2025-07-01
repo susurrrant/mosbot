@@ -52,6 +52,8 @@ con.close()
 @client.event
 async def on_ready():
     print(f'Logged in as {client.user} (ID: {client.user.id})')
+    for guild in client.guilds:
+        await guild.chunk()
     print('------')
 
 
@@ -64,7 +66,7 @@ async def getUsers(interaction: discord.Interaction, rawMessage: str):
     seen_ids = set()
     for user_id in user_ids:
         try:
-            member = await interaction.guild.fetch_member(int(user_id))
+            member = interaction.guild.get_member(int(user_id))
             if member.id not in seen_ids:
                 unique_members.append(member)
                 seen_ids.add(member.id)
