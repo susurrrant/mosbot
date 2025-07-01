@@ -1,5 +1,6 @@
 from typing import Optional
 import os
+import re
 
 import discord
 from discord import app_commands
@@ -54,55 +55,74 @@ async def on_ready():
     print('------')
 
 
+async def getUsers(interaction: discord.Interaction, rawMessage: str):
+    user_ids = re.findall(r'<@!?(\d+)>', rawMessage)
+    if not user_ids:
+        await interaction.response.send_message("❌ You must mention at least one member.", ephemeral=True)
+        return
+    unique_members = []
+    seen_ids = set()
+    for user_id in user_ids:
+        try:
+            member = await interaction.guild.fetch_member(int(user_id))
+            if member.id not in seen_ids:
+                unique_members.append(member)
+                seen_ids.add(member.id)
+        except:
+            continue
+
+    if not unique_members:
+        await interaction.response.send_message("❌ No valid members found in mentions.", ephemeral=True)
+        return
+    return unique_members
 
 @client.tree.command()
 @app_commands.describe(
-    member='The user to give $mos to',
+    members='The user(s) to give $mos to. Ie: @Ken @Mosc',
     dollars='The numbers of $mos to give',
 )
-async def mosgive(interaction: discord.Interaction, member: discord.Member, dollars: int, memo: str):
-    valid_role = False
+async def mosgive(interaction: discord.Interaction, members: str, dollars: int, memo: str):
     caller = interaction.user
-    caller_name = str(caller.display_name)
-
-    member_name = str(member.display_name)
-    member_id = member.id
-
-    if dollars < 0:
-        dollars = dollars * -1
-
-    for role in caller.roles:
-        if role.name == "mos":
-            valid_role = True
-
-    if valid_role == True:
-
-        con = sqlite3.connect("mosbot.db")
-        cur = con.cursor()
-        res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
-
-        if res.fetchone() is not None:
-            res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
-            data = res.fetchone()
-
-            update_dollars = data[1] + dollars
-
-            cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_dollars, member_id,))
-            con.commit()
-            con.close()
-
-            await interaction.response.send_message(f'{member_name} has gained {dollars} $mos, and now has {update_dollars} $mos. Memo: {memo}')
-
-        else:
-            cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, dollars,))
-            con.commit()
-            con.close()
-
-            await interaction.response.send_message(f'{member_name} now has {dollars} $mos. Memo: {memo}')
-
-    else:
+    if not any(role.name == "mos" for role in caller.roles):
+        caller_name = str(caller.display_name)
         await interaction.response.send_message(f'{caller_name} does not have $mos ledger write permissions.')
+        return
 
+    unique_members = await getUsers(interaction, members)
+    if not unique_members:
+        return
+
+    responseMessages = [f'Gave **{dollars}** dollars for *{memo}*']
+    for member in unique_members:
+        member_id = member.id
+
+        if dollars < 0:
+            dollars = dollars * -1
+
+            con = sqlite3.connect("mosbot.db")
+            cur = con.cursor()
+            res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
+
+            if res.fetchone() is not None:
+                res = cur.execute("SELECT * FROM bank WHERE id=?", (member_id,))
+                data = res.fetchone()
+
+                update_dollars = data[1] + dollars
+
+                cur.execute("UPDATE bank SET balance=? WHERE id=?", (update_dollars, member_id,))
+                con.commit()
+                con.close()
+
+                responseMessages.append(f'{member.mention} now has {update_dollars} $mos.')
+
+            else:
+                cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, dollars,))
+                con.commit()
+                con.close()
+
+                responseMessages.append(f'{member.mention} now has {dollars} $mos.')
+
+    await interaction.response.send_message("\n".join(responseMessages))
 
 
 @client.tree.command()
