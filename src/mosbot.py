@@ -52,6 +52,8 @@ con.close()
 @client.event
 async def on_ready():
     print(f'Logged in as {client.user} (ID: {client.user.id})')
+    for guild in client.guilds:
+        await guild.chunk()
     print('------')
 
 
@@ -64,7 +66,7 @@ async def getUsers(interaction: discord.Interaction, rawMessage: str):
     seen_ids = set()
     for user_id in user_ids:
         try:
-            member = await interaction.guild.fetch_member(int(user_id))
+            member = interaction.guild.get_member(int(user_id))
             if member.id not in seen_ids:
                 unique_members.append(member)
                 seen_ids.add(member.id)
@@ -95,6 +97,7 @@ async def mosgive(interaction: discord.Interaction, members: str, dollars: int, 
     responseMessages = [f'Gave **{dollars}** dollars for *{memo}*']
     for member in unique_members:
         member_id = member.id
+        member_name = member.nick or member.global_name or member.name
 
         if dollars < 0:
             dollars = dollars * -1
@@ -113,14 +116,14 @@ async def mosgive(interaction: discord.Interaction, members: str, dollars: int, 
                 con.commit()
                 con.close()
 
-                responseMessages.append(f'{member.mention} now has {update_dollars} $mos.')
+            responseMessages.append(f'{member_name} now has {update_dollars} $mos.')
 
             else:
                 cur.execute("INSERT INTO bank VALUES(?,?)", (member_id, dollars,))
                 con.commit()
                 con.close()
 
-                responseMessages.append(f'{member.mention} now has {dollars} $mos.')
+            responseMessages.append(f'{member_name} now has {dollars} $mos.')
 
     await interaction.response.send_message("\n".join(responseMessages))
 
